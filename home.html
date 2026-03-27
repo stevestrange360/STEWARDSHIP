@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block title %}Welcome -  Stewardship System{% endblock %}
+
+{% block content %}
+<!-- Hero Banner Section with Background Image -->
+<div class="hero-section mb-5" style="background-image: url('{{ url_for('static', filename='images/church-banner.jpg') }}'); background-size: cover; background-position: center;">
+    <div class="hero-overlay"></div>
+    <div class="container py-5 position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-7 fade-in-left">
+                <!-- Church Logo Image -->
+                <div class="church-logo-img mb-4">
+                    <img src="{{ url_for('static', filename='images/church-logo.png') }}" 
+                         alt=" Logo" 
+                         class="img-fluid" 
+                         style="max-height: 120px;">
+                </div>
+                <!-- Church Name with Animation -->
+                <div class="welcome-badge animate-pulse">
+                    <i class="bi bi-church"></i> Welcome to
+                </div>
+                <h1 class="display-7 fw-bold mb-4">
+                    <span class="gradient-text">KKKT CHANGANYIKENI </span>
+                </h1>
+                <h2 class="display-18 mb-15 text-white-50">
+                    TUNACHANGANYIKA<br>NA<br>DAMU YA YESU 
+                </h2>
+                <div class="typing-container mb-4">
+                    <p class="lead typing-text" id="typingText"></p>
+                </div>
+                <p class="mb-4 text-white-80">Managing church member pledges, tracking payments, and sending automated reminders with love and care.</p>
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg pulse-btn">
+                        <i class="bi bi-box-arrow-in-right"></i> Go to Dashboard
+                    </a>
+                    <a href="{{ url_for('main.add_debtor') }}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-person-plus"></i> Add Member
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center fade-in-right">
+                <div class="floating-church">
+                    <i class="bi bi-building"></i>
+                    <i class="bi bi-church cross-icon"></i>
+                    <i class="bi bi-star-fill star-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Church Information Banner -->
+<div class="church-info-banner mb-5" data-aos="fade-up">
+    <div class="glass-card p-4">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="church-detail">
+                    <i class="bi bi-geo-alt-fill fs-2 text-primary"></i>
+                    <h5 class="mt-2">Our Location</h5>
+                    <p class="text-muted mb-0">Changanyikeni-Ubungo, Dar es Salaam</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="church-detail">
+                    <i class="bi bi-calendar-week-fill fs-2 text-primary"></i>
+                    <h5 class="mt-2">Service Times</h5>
+                    <p class="text-muted mb-0">Sunday: 7:00 AM & 10:00 AM<br>Wednesday: 6:00 PM<br>Friday: 6:00 PM</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="church-detail">
+                    <i class="bi bi-envelope-fill fs-2 text-primary"></i>
+                    <h5 class="mt-2">Contact Us</h5>
+                    <p class="text-muted mb-0">+255 123 456 789<br>info@kkktchanganyikeni.org</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats with Counters -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="stat-card-animated" data-aos="fade-up" data-aos-delay="100">
+            <div class="stat-icon">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <h3 class="counter" data-target="{{ stats.total_members }}">0</h3>
+            <p class="text-muted">Total Members</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card-animated" data-aos="fade-up" data-aos-delay="200">
+            <div class="stat-icon">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <h3 class="counter" data-target="{{ stats.total_committed }}">0</h3>
+            <p class="text-muted">Total Committed (Tsh)</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card-animated" data-aos="fade-up" data-aos-delay="300">
+            <div class="stat-icon">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <h3 class="counter" data-target="{{ stats.pending_count }}">0</h3>
+            <p class="text-muted">Pending</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card-animated" data-aos="fade-up" data-aos-delay="400">
+            <div class="stat-icon">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h3 class="counter" data-target="{{ stats.paid_count }}">0</h3>
+            <p class="text-muted">Fully Paid</p>
+        </div>
+    </div>
+</div>
+
+<!-- Mission & Vision Section -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="mission-card" data-aos="fade-right">
+            <div class="card-icon">
+                <i class="bi bi-bullseye"></i>
+            </div>
+            <h3>Our Mission</h3>
+            <p>To promote faithful stewardship in  by helping track pledges and send timely reminders, ensuring every member fulfills their commitment with joy.</p>
+            <div class="mission-bible">
+                <i class="bi bi-book"></i> "Give, and it will be given to you." - Luke 6:38
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="vision-card" data-aos="fade-left">
+            <div class="card-icon">
+                <i class="bi bi-eye"></i>
+            </div>
+            <h3>Our Vision</h3>
+            <p>To be a church where every member practices faithful stewardship, supporting the growth of  through transparent and loving accountability.</p>
+            <div class="vision-bible">
+                <i class="bi bi-book"></i> "Each of you should give what you have decided in your heart to give." - 2 Cor 9:7
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12 text-center mb-4">
+        <h2 class="section-title">Why Choose Our Stewardship System?</h2>
+        <p class="text-muted">Powerful features to help manage church finances</p>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card" data-aos="zoom-in" data-aos-delay="100">
+            <div class="feature-icon">
+                <i class="bi bi-bell-fill"></i>
+            </div>
+            <h4>Automated Reminders</h4>
+            <p>Send automatic SMS and email reminders to members before due dates.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card" data-aos="zoom-in" data-aos-delay="200">
+            <div class="feature-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <h4>Track Payments</h4>
+            <p>Monitor payments, see outstanding balances, and generate receipts instantly.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card" data-aos="zoom-in" data-aos-delay="300">
+            <div class="feature-icon">
+                <i class="bi bi-file-text-fill"></i>
+            </div>
+            <h4>Comprehensive Reports</h4>
+            <p>Generate detailed reports on pledges, payments, and member contributions.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Section -->
+<div class="glass-card p-4 mb-5" data-aos="fade-up">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Recent Pledges at </h3>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-outline-primary">View All →</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Member</th>
+                    <th>Debt Type</th>
+                    <th>Amount</th>
+                    <th>Balance</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                  </thead>
+            <tbody>
+                {% for debtor in recent_debtors[:5] %}
+                <tr class="fade-in">
+                    <td>
+                        <strong>{{ debtor.name }}</strong><br>
+                        <small class="text-muted">{{ debtor.email }}</small>
+                    </td>
+                    <td>{{ debtor.debt_type.value }}</td>
+                    <td>Tsh{{ "{:,.0f}".format(debtor.total_amount) }}</td>
+                    <td>
+                        <span class="{% if debtor.balance > 0 %}text-warning{% else %}text-success{% endif %}">
+                            Tsh{{ "{:,.0f}".format(debtor.balance) }}
+                        </span>
+                    </td>
+                    <td>{{ debtor.due_date.strftime('%d %b %Y') }}</td>
+                    <td>
+                        {% if debtor.status.value == 'Paid' %}
+                            <span class="badge-status badge-paid">Paid</span>
+                        {% elif debtor.status.value == 'Overdue' %}
+                            <span class="badge-status badge-overdue">Overdue</span>
+                        {% else %}
+                            <span class="badge-status badge-pending">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Call to Action with Church Name -->
+<div class="cta-section text-center" data-aos="zoom-in">
+    <div class="glass-card p-5">
+        <i class="bi bi-church fs-1 text-primary mb-3"></i>
+        <h2 class="mb-3">Join Us in KKKT CHANGANYIKENI</h2>
+        <p class="mb-4"> welcomes you to be part of our journey in building God's kingdom.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-right-circle"></i> Get Started
+            </a>
+            <a href="#" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-info-circle"></i> Learn More
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Church Footer Banner -->
+<div class="church-footer-banner text-center mt-4">
+    <div class="glass-card p-3">
+        <p class="mb-0">
+            <i class="bi bi-church"></i>  | 
+            <i class="bi bi-telephone"></i> +255 123 456 789 | 
+            <i class="bi bi-envelope"></i> info@kkktchanganyikeni.org
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+<script>
+    AOS.init({
+        duration: 1000,
+        once: true,
+        offset: 100
+    });
+
+    const messages = [
+        "Manage Church Pledges at ",
+        "Track Member Commitments Faithfully",
+        "Send Automated Reminders with Love",
+        "Build Faithful Stewardship Together"
+    ];
+    let messageIndex = 0;
+    let charIndex = 0;
+    let currentText = '';
+    let isDeleting = false;
+    
+    function typeEffect() {
+        const currentMessage = messages[messageIndex];
+        
+        if (isDeleting) {
+            currentText = currentMessage.substring(0, charIndex - 1);
+            charIndex--;
+        } else {
+            currentText = currentMessage.substring(0, charIndex + 1);
+            charIndex++;
+        }
+        
+        document.getElementById('typingText').innerHTML = currentText;
+        
+        if (!isDeleting && charIndex === currentMessage.length) {
+            isDeleting = true;
+            setTimeout(typeEffect, 2000);
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            messageIndex = (messageIndex + 1) % messages.length;
+            setTimeout(typeEffect, 500);
+        } else {
+            setTimeout(typeEffect, isDeleting ? 50 : 100);
+        }
+    }
+    
+    typeEffect();
+    
+    const counters = document.querySelectorAll('.counter');
+    const speed = 200;
+    
+    counters.forEach(counter => {
+        const updateCount = () => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const count = parseInt(counter.innerText);
+            const increment = Math.ceil(target / speed);
+            
+            if (count < target) {
+                counter.innerText = Math.min(count + increment, target);
+                setTimeout(updateCount, 20);
+            } else {
+                if (target >= 1000000) {
+                    counter.innerText = (target / 1000000).toFixed(1) + 'M';
+                } else {
+                    counter.innerText = target.toLocaleString();
+                }
+            }
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    updateCount();
+                    observer.unobserve(entry.target);
+                }
+            });
+        });
+        
+        observer.observe(counter);
+    });
+    
+    const floatingElements = document.querySelectorAll('.floating-church i');
+    floatingElements.forEach((el, index) => {
+        setInterval(() => {
+            el.style.transform = `translateY(${Math.sin(Date.now() / 1000 + index) * 10}px)`;
+        }, 50);
+    });
+    
+    document.querySelectorAll('.stat-card-animated').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-10px) scale(1.02)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+</script>
+{% endblock %}

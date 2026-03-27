@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Send Reminder - {{ member.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="glass-card p-4">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="mb-1">📨 Send Reminder</h3>
+                    <p class="text-muted mb-0">Send payment reminder to member</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+
+            <!-- Member Info Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-person-circle fs-1 text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">{{ member.name }}</h4>
+                            <div class="d-flex gap-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-envelope"></i> {{ member.email or 'No email' }}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-telephone"></i> {{ member.phone }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Debt Type Badge -->
+                    <div class="mb-3">
+                        <span class="badge bg-info p-2">
+                            <i class="bi bi-tag"></i> {{ debt.debt_type.value }}
+                        </span>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="bg-light p-3 rounded text-center">
+                                <small class="text-muted d-block">Total</small>
+                                <strong class="fs-4">Tsh{{ "{:,.0f}".format(debt.total_amount) }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light p-3 rounded text-center">
+                                <small class="text-muted d-block">Paid</small>
+                                <strong class="fs-4 text-success">Tsh{{ "{:,.0f}".format(debt.amount_paid) }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light p-3 rounded text-center">
+                                <small class="text-muted d-block">Balance</small>
+                                <strong class="fs-4 {% if debt.balance > 0 %}text-warning{% else %}text-success{% endif %}">
+                                    Tsh{{ "{:,.0f}".format(debt.balance) }}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    {% set percentage = (debt.amount_paid / debt.total_amount * 100) if debt.total_amount > 0 else 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Payment Progress</span>
+                            <span>{{ "%.1f"|format(percentage) }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ percentage }}%;" 
+                                 aria-valuenow="{{ percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reminder Options -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-envelope-fill fs-1 text-primary mb-3"></i>
+                            <h5>Email Reminder</h5>
+                            <p class="text-muted small">Send reminder via email</p>
+                            {% if member.email %}
+                                <form method="post" action="{{ url_for('main.send_email_reminder', debt_id=debt.debt_id) }}">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-envelope"></i> Send Email
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button class="btn btn-secondary w-100" disabled>
+                                    <i class="bi bi-envelope"></i> No Email
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <i class="bi bi-chat-dots-fill fs-1 text-success mb-3"></i>
+                            <h5>SMS Reminder</h5>
+                            <p class="text-muted small">Send reminder via SMS</p>
+                            <form method="post" action="{{ url_for('main.send_sms_reminder', debt_id=debt.debt_id) }}">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-chat-dots"></i> Send SMS
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Payment Recording Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cash-stack text-success me-2"></i>
+                        Record Payment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('main.record_payment', debt_id=debt.debt_id) }}" id="paymentForm">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Payment Amount (Tsh)</label>
+                                <input type="number" name="amount" class="form-control form-control-lg" 
+                                    min="1000" max="{{ debt.balance }}" step="1000" 
+                                    value="{{ debt.balance }}" required>
+                                <small class="text-muted">Maximum: Tsh{{ "{:,.0f}".format(debt.balance) }}</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Payment Method</label>
+                                <select name="payment_method" class="form-select">
+                                    <option value="Cash">💵 Cash</option>
+                                    <option value="M-Pesa">📱 M-Pesa</option>
+                                    <option value="Bank Transfer">🏦 Bank Transfer</option>
+                                    <option value="Cheque">📝 Cheque</option>
+                                    <option value="Other">🔄 Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Transaction ID (Optional)</label>
+                                <input type="text" name="transaction_id" class="form-control" placeholder="e.g., M-Pesa ref, Cheque #">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Any additional notes about this payment..."></textarea>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="send_sms" id="sendSMS" checked>
+                                    <label class="form-check-label" for="sendSMS">
+                                        <i class="bi bi-chat-dots text-success"></i> Send thank you SMS to member
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    <i class="bi bi-check-circle"></i> Record Payment
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+                    
+            <!-- Payment History Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Payment History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if debt.payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Receipt #</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Transaction ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in debt.payments|sort(attribute='payment_date', reverse=True) %}
+                                <tr>
+                                    <td>{{ payment.payment_date.strftime('%d %b %Y') }}</td>
+                                    <td><code>{{ payment.receipt_number }}</code></td>
+                                    <td class="text-success">Tsh{{ "{:,.0f}".format(payment.amount) }}</td>
+                                    <td>{{ payment.payment_method }}</td>
+                                    <td>{{ payment.transaction_id or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No payments recorded yet</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Message Preview -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">📝 Message Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="bg-light p-4 rounded">
+                        <p>Dear {{ member.name }},</p>
+                        
+                        <p>We hope this message finds you well. This is a gentle reminder regarding your 
+                           <strong>{{ debt.debt_type.value }}</strong> commitment of 
+                           <strong>Tsh{{ "{:,.0f}".format(debt.total_amount) }}</strong>. 
+                           So far, you have contributed <strong>Tsh{{ "{:,.0f}".format(debt.amount_paid) }}</strong>, 
+                           with a remaining balance of <strong>Tsh{{ "{:,.0f}".format(debt.balance) }}</strong>.</p>
+                        
+                        <p>Your generous support is helping us build a house of worship for our community. 
+                           The next installment is due by 
+                           <strong>{{ debt.due_date.strftime('%d %B %Y') }}</strong>.</p>
+                        
+                        <p>Please feel free to reach out if you need to discuss a revised payment plan.</p>
+                        
+                        <p class="mb-0">Blessings,<br></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Reminders -->
+            {% if reminders %}
+            <div class="mt-4">
+                <h6 class="mb-3">Recent Reminders</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Recipient</th>
+                                <th>Sent</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reminder in reminders %}
+                            <tr>
+                                <td>
+                                    {% if reminder.reminder_type == 'Email' %}
+                                        <i class="bi bi-envelope text-primary"></i>
+                                    {% else %}
+                                        <i class="bi bi-chat-dots text-success"></i>
+                                    {% endif %}
+                                    {{ reminder.reminder_type }}
+                                </td>
+                                <td>{{ reminder.recipient }}</td>
+                                <td>{{ reminder.sent_at.strftime('%d %b %Y %H:%M') }}</td>
+                                <td>
+                                    {% if reminder.status == 'Sent' %}
+                                        <span class="badge bg-success">Sent</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

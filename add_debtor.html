@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Add New Debtor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="glass-card p-4">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="mb-1">➕ Add New Debtor</h3>
+                    <p class="text-muted mb-0">Record a new member pledge or debt</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+            
+            <form method="post" action="{{ url_for('main.add_debtor_post') }}" id="addDebtorForm">
+                <!-- Member Information -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-circle text-primary me-2"></i>
+                            Member Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" name="name" class="form-control" placeholder="e.g., James Okonkwo" required>
+                                <small class="text-muted">Enter member's full name</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number *</label>
+                                <input type="tel" name="phone" class="form-control" placeholder="e.g., 08012345678" required>
+                                <small class="text-muted">Nigerian/Tanzanian number</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" placeholder="e.g., james@email.com">
+                                <small class="text-muted">Optional but recommended</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Occupation</label>
+                                <input type="text" name="occupation" class="form-control" placeholder="e.g., Teacher">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Debt Information -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cash-stack text-success me-2"></i>
+                            Pledge/Debt Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Debt Type *</label>
+                                <select name="debt_type" class="form-select" required>
+                                    <option value="">-- Select Type --</option>
+                                    {% for type in debt_types %}
+                                    <option value="{{ type.value }}">{{ type.value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Total Amount (Tsh) *</label>
+                                <input type="number" name="total_amount" class="form-control" min="1000" step="1000" placeholder="e.g., 50000" required>
+                                <small class="text-muted">Minimum: Tsh1,000</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Due Date *</label>
+                                <input type="date" name="due_date" class="form-control" min="{{ today }}" value="{{ today }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Initial Payment (Tsh)</label>
+                                <input type="number" name="initial_payment" class="form-control" min="0" value="0" step="1000">
+                                <small class="text-muted">Amount paid today (optional)</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description / Purpose</label>
+                                <textarea name="description" class="form-control" rows="2" placeholder="What is this pledge for?"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Additional Notes</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Any additional information..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reminder Settings -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bell text-warning me-2"></i>
+                            Reminder Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="enable_reminders" id="enableReminders" checked>
+                                    <label class="form-check-label" for="enableReminders">
+                                        <strong>Enable automatic reminders</strong>
+                                        <br>
+                                        <small class="text-muted">Send SMS reminders before due date</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="send_welcome" id="sendWelcome" checked>
+                                    <label class="form-check-label" for="sendWelcome">
+                                        <strong>Send welcome message</strong>
+                                        <br>
+                                        <small class="text-muted">Notify member about their pledge</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="mark_as_paid" id="markAsPaid">
+                                    <label class="form-check-label" for="markAsPaid">
+                                        <strong>Mark as fully paid</strong>
+                                        <br>
+                                        <small class="text-muted">Check if payment is complete</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="bi bi-save"></i> Save Debtor
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary">
+                        <i class="bi bi-eraser"></i> Clear
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-danger">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Form validation
+    document.getElementById('addDebtorForm').addEventListener('submit', function(e) {
+        let totalAmount = document.querySelector('input[name="total_amount"]').value;
+        let initialPayment = document.querySelector('input[name="initial_payment"]').value;
+        
+        if (parseFloat(initialPayment) > parseFloat(totalAmount)) {
+            e.preventDefault();
+            alert('Initial payment cannot exceed total amount!');
+        }
+    });
+    
+    // Auto-format phone number
+    document.querySelector('input[name="phone"]').addEventListener('input', function(e) {
+        let phone = e.target.value.replace(/\D/g, '');
+        if (phone.length > 11) {
+            phone = phone.slice(0, 11);
+        }
+        e.target.value = phone;
+    });
+    
+    // Auto-format currency
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = parseInt(this.value);
+            }
+        });
+    });
+</script>
+{% endblock %}
