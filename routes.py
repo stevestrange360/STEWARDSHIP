@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import os
 from datetime import date, datetime, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file
 from sqlalchemy import func, and_
 
 from . import db as db_module
 from .models import Member, Debt, Payment, ReminderLog, DebtType, PaymentStatus
 from .sms_service import SMSService, MessageTemplates
+from .reports import ReportGenerator      # ← NOTE: reports (with 's')
+from .pdf_exporter import PDFExporter     # ← NOTE: pdf_exporter
 from sqlalchemy.orm import joinedload
 
 bp = Blueprint("main", __name__)
 sms_service = SMSService()
-
 def _require_login():
     if not session.get("logged_in"):
         return redirect(url_for("main.login"))
@@ -49,8 +50,9 @@ def home():
     if gate:
         return gate
     
+    import os
+    
     with db_module.SessionLocal() as db:
-        # Get stats for homepage
         stats = {
             "total_members": db.query(Member).count(),
             "total_committed": db.query(func.sum(Debt.total_amount)).scalar() or 0,
@@ -58,7 +60,6 @@ def home():
             "paid_count": db.query(Debt).filter(Debt.status == PaymentStatus.PAID).count(),
         }
         
-        # Get recent debtors for homepage
         recent_debts = db.query(Debt).join(Member).order_by(Debt.created_at.desc()).limit(5).all()
         
         recent_debtors = []
@@ -74,9 +75,18 @@ def home():
                 "status": debt.status,
                 "due_date": debt.due_date
             })
+        
+        # Check if images exist
+        logo_path = os.path.join('app', 'static', 'images', 'church-logo.png')
+        banner_path = os.path.join('app', 'static', 'images', 'church-banner.jpg')
+        logo_exists = os.path.exists(logo_path)
+        banner_exists = os.path.exists(banner_path)
     
-    return render_template("home.html", stats=stats, recent_debtors=recent_debtors)
-
+    return render_template("home.html", 
+                          stats=stats, 
+                          recent_debtors=recent_debtors,
+                          logo_exists=logo_exists,
+                          banner_exists=banner_exists)
 # ========== ROOT ROUTE (Redirects to home) ==========
 @bp.get("/")
 def index():
@@ -420,26 +430,52 @@ def send_email_reminder(debt_id):
     gate = _require_login()
     if gate:
         return gate
-    
+
     with db_module.SessionLocal() as db:
         debt = db.get(Debt, debt_id)
         
+        if not debt.member.email:
+            flash("No email address for this member.", "warning")
+            return redirect(url_for("main.send_reminder", debt_id=debt_id))
+
+        # Send the real email
+        from .email_service import EmailService, EmailTemplates
+        email_service = EmailService()
+
+        body = EmailTemplates.pledge_reminder(
+            debt.member.name,
+            debt.total_amount,
+            debt.due_date.strftime('%d %b %Y'),
+            debt.balance
+        )
+
+        success, error = email_service.send_email(
+            recipient=debt.member.email,
+            subject="Pledge Reminder",
+            body=body
+        )
+
+        # Log the reminder in database
         log = ReminderLog(
             member_id=debt.member_id,
             debt_id=debt_id,
             reminder_type="Email",
             recipient=debt.member.email,
-            message=f"Email reminder sent for {debt.debt_type.value}",
-            status="Sent"
+            message=body,
+            status="Sent" if success else "Failed",
+            error_message=error if not success else None
         )
         db.add(log)
-        
-        debt.reminder_count += 1
-        debt.last_reminder_sent = datetime.now()
+
+        if success:
+            debt.reminder_count += 1
+            debt.last_reminder_sent = datetime.now()
+            flash(f"Email reminder sent to {debt.member.name}", "success")
+        else:
+            flash(f"Failed to send email: {error}", "danger")
+
         db.commit()
-        
-        flash(f"Email reminder sent to {debt.member.name}", "success")
-    
+
     return redirect(url_for("main.send_reminder", debt_id=debt_id))
 
 @bp.post("/reminder/<int:debt_id>/sms")
@@ -623,3 +659,156 @@ def send_auto_reminders():
         db.commit()
     
     return f"Sent {reminders_sent} reminders"
+
+# -----------------------
+# Report Generation
+# -----------------------
+@bp.post("/reports/generate")
+def generate_report():
+    gate = _require_login()
+    if gate:
+        return gate
+    
+    # Get form data
+    report_type = request.form.get("report_type")
+    period = request.form.get("period")
+    format_type = request.form.get("format", "html")
+    member_id = request.form.get("member_id")
+    
+    # Get date range
+    start_date = None
+    end_date = None
+    
+    if period == "custom":
+        start_date = datetime.strptime(request.form.get("start_date"), "%Y-%m-%d").date()
+        end_date = datetime.strptime(request.form.get("end_date"), "%Y-%m-%d").date()
+    
+    # Create database session
+    with db_module.SessionLocal() as db:
+        # Create report generator instance
+        report_gen = ReportGenerator(db)
+        
+        # Get date range
+        if period != "custom":
+            start_date, end_date = report_gen.get_date_range(period)
+        
+        # Generate data based on report type
+        data = None
+        title = ""
+        
+        if report_type == "financial_summary":
+            data = report_gen.financial_summary(start_date, end_date)
+            title = "Financial Summary Report"
+        
+        elif report_type == "pledges_by_type":
+            data = report_gen.pledges_by_type(start_date, end_date)
+            title = "Pledges by Type Report"
+        
+        elif report_type == "overdue_pending":
+            data = report_gen.overdue_pending()
+            title = "Overdue & Pending Pledges Report"
+        
+        elif report_type == "monthly_collection":
+            # For monthly collection, we need year and month from period
+            if period == "this_month":
+                year = date.today().year
+                month = date.today().month
+            elif period == "last_month":
+                last_month = date.today().replace(day=1) - timedelta(days=1)
+                year = last_month.year
+                month = last_month.month
+            else:
+                year = date.today().year
+                month = date.today().month
+            data = report_gen.monthly_collection(year, month)
+            title = f"Monthly Collection Report - {data['month_name']} {year}"
+        
+        elif report_type == "member_statement":
+            if member_id:
+                data = report_gen.member_statement(int(member_id), start_date, end_date)
+                title = f"Member Statement - {data['member']['name']}"
+            else:
+                flash("Please select a member", "warning")
+                return redirect(url_for("main.reports_page"))
+        
+        elif report_type == "yearly_summary":
+            year = date.today().year
+            if period == "last_year":
+                year = date.today().year - 1
+            data = report_gen.yearly_summary(year)
+            title = f"Yearly Summary Report - {year}"
+        
+        elif report_type == "payment_history":
+            data = report_gen.payment_history(start_date, end_date)
+            title = "Payment History Report"
+        
+        elif report_type == "completed_pledges":
+            data = report_gen.completed_pledges(start_date, end_date)
+            title = "Completed Pledges Report"
+        
+        if not data:
+            flash("No data available for the selected period", "warning")
+            return redirect(url_for("main.reports_page"))
+        
+        # Format period string for display
+        period_str = f"{start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')}" if start_date and end_date else "All Time"
+        
+        # Export based on format
+        if format_type == "excel":
+            excel_buffer = report_gen.export_to_excel(report_type, data, title, period_str)
+            return send_file(
+                excel_buffer,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                download_name=f"{report_type}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            )
+        
+        elif format_type == "pdf":
+            pdf_exporter = PDFExporter(church_name="KKKT CHANGANYIKENI")
+            
+            if report_type == "financial_summary":
+                pdf_buffer = pdf_exporter.export_financial_summary(data, title, period_str)
+            elif report_type == "pledges_by_type":
+                pdf_buffer = pdf_exporter.export_pledges_by_type(data, title, period_str)
+            elif report_type == "overdue_pending":
+                pdf_buffer = pdf_exporter.export_overdue_pending(data, title, period_str)
+            elif report_type == "monthly_collection":
+                pdf_buffer = pdf_exporter.export_monthly_collection(data, title, period_str)
+            elif report_type == "member_statement":
+                pdf_buffer = pdf_exporter.export_member_statement(data, title, period_str)
+            elif report_type == "yearly_summary":
+                pdf_buffer = pdf_exporter.export_yearly_summary(data, title, period_str)
+            elif report_type == "payment_history":
+                pdf_buffer = pdf_exporter.export_payment_history(data, title, period_str)
+            elif report_type == "completed_pledges":
+                pdf_buffer = pdf_exporter.export_completed_pledges(data, title, period_str)
+            else:
+                pdf_buffer = pdf_exporter.export_financial_summary(data, title, period_str)
+            
+            return send_file(
+                pdf_buffer,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=f"{report_type}_{datetime.now().strftime('%Y%m%d')}.pdf"
+            )
+        
+        else:  # HTML view
+            return render_template(
+                "report_results.html",
+                report_type=report_type,
+                report_title=title,
+                report_period=period_str,
+                generation_date=datetime.now().strftime('%d %b %Y, %H:%M'),
+                data=data,
+                chart_data=None
+            )
+@bp.get("/reports")
+def reports_page():
+    gate = _require_login()
+    if gate:
+        return gate
+    
+    with db_module.SessionLocal() as db:
+        members = db.query(Member).order_by(Member.name).all()
+    
+    return render_template("reports.html", members=members)            
