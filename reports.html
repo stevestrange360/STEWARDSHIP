@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Reports Center - Stewardship System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="mb-1">📊 Reports Center</h3>
+                    <p class="text-muted mb-0">Generate comprehensive reports on pledges, payments, and member contributions</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+
+            <form method="post" action="{{ url_for('main.generate_report') }}" id="reportForm">
+                <!-- Report Type Selection -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text-fill text-primary me-2"></i>
+                            1. Select Report Type
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <select name="report_type" id="reportType" class="form-select form-select-lg" required>
+                                    <option value="">-- Select Report --</option>
+                                    <option value="financial_summary">📊 Financial Summary Dashboard</option>
+                                    <option value="pledges_by_type">📈 Pledges by Type</option>
+                                    <option value="overdue_pending">⚠️ Overdue & Pending Pledges</option>
+                                    <option value="monthly_collection">📅 Monthly Collection Report</option>
+                                    <option value="member_statement">👤 Member Contribution Statement</option>
+                                    <option value="yearly_summary">📆 Yearly Summary Report</option>
+                                    <option value="payment_history">💳 Payment History Report</option>
+                                    <option value="completed_pledges">✅ Completed Pledges Report</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="memberSelectContainer" style="display: none;">
+                                <label class="form-label">Select Member</label>
+                                <select name="member_id" class="form-select">
+                                    <option value="">-- Choose Member --</option>
+                                    {% for member in members %}
+                                    <option value="{{ member.member_id }}">{{ member.name }} - {{ member.phone }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Period Selection -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar3 text-success me-2"></i>
+                            2. Select Period
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <select name="period" id="period" class="form-select" required>
+                                    <option value="this_month">This Month</option>
+                                    <option value="last_month">Last Month</option>
+                                    <option value="this_quarter">This Quarter</option>
+                                    <option value="this_year">This Year</option>
+                                    <option value="last_year">Last Year</option>
+                                    <option value="all_time">All Time</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4" id="startDateContainer" style="display: none;">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" name="start_date" class="form-control">
+                            </div>
+                            <div class="col-md-4" id="endDateContainer" style="display: none;">
+                                <label class="form-label">End Date</label>
+                                <input type="date" name="end_date" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Format Selection -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="bi bi-download text-warning me-2"></i>
+                            3. Select Format
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" value="html" id="formatHtml" checked>
+                                    <label class="form-check-label" for="formatHtml">
+                                        <i class="bi bi-eye"></i> View on Screen (HTML)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" value="excel" id="formatExcel">
+                                    <label class="form-check-label" for="formatExcel">
+                                        <i class="bi bi-file-excel text-success"></i> Download as Excel (XLSX)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="format" value="pdf" id="formatPdf">
+                                    <label class="form-check-label" for="formatPdf">
+                                        <i class="bi bi-file-pdf text-danger"></i> Download as PDF
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Generate Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide member select based on report type
+    const reportType = document.getElementById('reportType');
+    const memberSelectContainer = document.getElementById('memberSelectContainer');
+    
+    reportType.addEventListener('change', function() {
+        if (this.value === 'member_statement') {
+            memberSelectContainer.style.display = 'block';
+        } else {
+            memberSelectContainer.style.display = 'none';
+        }
+    });
+    
+    // Show/hide custom date inputs
+    const periodSelect = document.getElementById('period');
+    const startDateContainer = document.getElementById('startDateContainer');
+    const endDateContainer = document.getElementById('endDateContainer');
+    
+    periodSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            startDateContainer.style.display = 'block';
+            endDateContainer.style.display = 'block';
+        } else {
+            startDateContainer.style.display = 'none';
+            endDateContainer.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+{% block title %}{{ report_title }} - Stewardship System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div>
+                    <h3 class="mb-1">{{ report_title }}</h3>
+                    <p class="text-muted mb-0">{{ report_period }}</p>
+                    <p class="text-muted small">Generated on: {{ generation_date }}</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button onclick="window.print()" class="btn btn-outline-secondary">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                    <a href="{{ url_for('main.reports_page') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Reports
+                    </a>
+                </div>
+            </div>
+
+            <!-- ========== FINANCIAL SUMMARY REPORT ========== -->
+            {% if report_type == 'financial_summary' %}
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="stat-card text-center p-4">
+                        <div class="text-muted small">Total Pledged</div>
+                        <h2 class="text-primary mb-0">Tsh {{ "{:,.0f}".format(data.total_pledged) }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center p-4">
+                        <div class="text-muted small">Total Collected</div>
+                        <h2 class="text-success mb-0">Tsh {{ "{:,.0f}".format(data.total_collected) }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center p-4">
+                        <div class="text-muted small">Outstanding Balance</div>
+                        <h2 class="text-warning mb-0">Tsh {{ "{:,.0f}".format(data.outstanding) }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Completion Rate</span>
+                    <span>{{ "%.1f"|format(data.completion_rate) }}%</span>
+                </div>
+                <div class="progress" style="height: 30px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ data.completion_rate }}%;" 
+                         aria-valuenow="{{ data.completion_rate }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ "%.1f"|format(data.completion_rate) }}%
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Active Pledges</div>
+                        <h3>{{ data.active_pledges }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Completed Pledges</div>
+                        <h3>{{ data.completed_pledges }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Overdue Pledges</div>
+                        <h3 class="text-danger">{{ data.overdue_pledges }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== PLEDGES BY TYPE REPORT ========== -->
+            {% elif report_type == 'pledges_by_type' %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Debt Type</th>
+                            <th>Total Pledged</th>
+                            <th>Collected</th>
+                            <th>Balance</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in data.pledge_types %}
+                        <tr>
+                            <td><strong>{{ t.name }}</strong></td>
+                            <td>Tsh {{ "{:,.0f}".format(t.total) }}</td>
+                            <td class="text-success">Tsh {{ "{:,.0f}".format(t.collected) }}</td>
+                            <td class="text-warning">Tsh {{ "{:,.0f}".format(t.balance) }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ t.percentage }}%;" 
+                                         aria-valuenow="{{ t.percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(t.percentage) }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-dark">
+                        <tr>
+                            <th>TOTAL</th>
+                            <th>Tsh {{ "{:,.0f}".format(data.total_pledged) }}</th>
+                            <th>Tsh {{ "{:,.0f}".format(data.total_collected) }}</th>
+                            <th>Tsh {{ "{:,.0f}".format(data.total_balance) }}</th>
+                            <th>{{ "%.1f"|format(data.overall_percentage) }}%</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- ========== OVERDUE & PENDING REPORT ========== -->
+            {% elif report_type == 'overdue_pending' %}
+            <div class="alert alert-warning mb-4">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Action Required:</strong> {{ data.overdue_count }} overdue pledges need immediate follow-up.
+            </div>
+
+            {% if data.overdue %}
+            <h4>🔴 Overdue Pledges</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover">
+                    <thead class="table-danger">
+                        <tr>
+                            <th>Member</th>
+                            <th>Phone</th>
+                            <th>Debt Type</th>
+                            <th>Balance</th>
+                            <th>Due Date</th>
+                            <th>Days Overdue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in data.overdue %}
+                        <tr>
+                            <td><strong>{{ d.member_name }}</strong><br><small class="text-muted">{{ d.email }}</small></td>
+                            <td>{{ d.phone }}</td>
+                            <td>{{ d.debt_type }}</td>
+                            <td class="text-danger">Tsh {{ "{:,.0f}".format(d.balance) }}</td>
+                            <td>{{ d.due_date }}</td>
+                            <td><span class="badge bg-danger">{{ d.days_overdue }} days</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if data.pending %}
+            <h4>🟡 Pending Pledges</h4>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-warning">
+                        <tr>
+                            <th>Member</th>
+                            <th>Phone</th>
+                            <th>Debt Type</th>
+                            <th>Balance</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in data.pending %}
+                        <tr>
+                            <td><strong>{{ d.member_name }}</strong><br><small class="text-muted">{{ d.email }}</small></td>
+                            <td>{{ d.phone }}</td>
+                            <td>{{ d.debt_type }}</td>
+                            <td class="text-warning">Tsh {{ "{:,.0f}".format(d.balance) }}</td>
+                            <td>{{ d.due_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- ========== MONTHLY COLLECTION REPORT ========== -->
+            {% elif report_type == 'monthly_collection' %}
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Total Collected</div>
+                        <h2 class="text-success">Tsh {{ "{:,.0f}".format(data.total_collected) }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Total Payments</div>
+                        <h2>{{ data.total_payments }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Average Payment</div>
+                        <h2>Tsh {{ "{:,.0f}".format(data.avg_payment) }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Weekly Breakdown</h4>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Week</th>
+                            <th>Payments</th>
+                            <th>Amount</th>
+                            <th>% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in data.weekly_breakdown %}
+                        <tr>
+                            <td>Week {{ w.week }}</td>
+                            <td>{{ w.payment_count }}</td>
+                            <td class="text-success">Tsh {{ "{:,.0f}".format(w.amount) }}</td>
+                            <td>{{ "%.1f"|format(w.percentage) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Payment Methods</h4>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr><th>Method</th><th>Amount</th><th>%</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for m in data.payment_methods %}
+                                <tr>
+                                    <td>{{ m.name }}</td>
+                                    <td>Tsh {{ "{:,.0f}".format(m.amount) }}</td>
+                                    <td>{{ "%.1f"|format(m.percentage) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Top Contributors</h4>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr><th>Member</th><th>Amount</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for t in data.top_members %}
+                                <tr>
+                                    <td>{{ t.name }}</td>
+                                    <td class="text-success">Tsh {{ "{:,.0f}".format(t.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== MEMBER STATEMENT REPORT ========== -->
+            {% elif report_type == 'member_statement' %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Member Name:</strong> {{ data.member.name }}</p>
+                            <p><strong>Phone:</strong> {{ data.member.phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> {{ data.member.email or 'N/A' }}</p>
+                            <p><strong>Member Since:</strong> {{ data.member.joined_date }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Total Pledged</div>
+                        <h4>Tsh {{ "{:,.0f}".format(data.total_pledged) }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Total Paid</div>
+                        <h4 class="text-success">Tsh {{ "{:,.0f}".format(data.total_paid) }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded text-center">
+                        <div class="text-muted">Outstanding</div>
+                        <h4 class="text-warning">Tsh {{ "{:,.0f}".format(data.outstanding) }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            {% for pledge in data.pledges %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <strong>{{ pledge.debt_type }}</strong> - {{ pledge.debt_number }}
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <small class="text-muted">Total:</small>
+                            <strong>Tsh {{ "{:,.0f}".format(pledge.total_amount) }}</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Paid:</small>
+                            <strong class="text-success">Tsh {{ "{:,.0f}".format(pledge.amount_paid) }}</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Balance:</small>
+                            <strong class="text-warning">Tsh {{ "{:,.0f}".format(pledge.balance) }}</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Due Date:</small>
+                            <strong>{{ pledge.due_date }}</strong>
+                        </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ pledge.percentage }}%;"></div>
+                    </div>
+                    
+                    {% if pledge.payments %}
+                    <h6>Payment History</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr><th>Date</th><th>Receipt</th><th>Amount</th><th>Method</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for p in pledge.payments %}
+                                <tr>
+                                    <td>{{ p.date }}</td>
+                                    <td><code>{{ p.receipt }}</code></td>
+                                    <td class="text-success">Tsh {{ "{:,.0f}".format(p.amount) }}</td>
+                                    <td>{{ p.method }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- ========== YEARLY SUMMARY REPORT ========== -->
+            {% elif report_type == 'yearly_summary' %}
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Total Collected</div>
+                        <h2 class="text-success">Tsh {{ "{:,.0f}".format(data.total_collected) }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Total Pledged</div>
+                        <h2>Tsh {{ "{:,.0f}".format(data.total_pledged) }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Growth Rate</div>
+                        <h2 class="{% if data.growth_rate >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ "+" if data.growth_rate >= 0 }}{{ "%.1f"|format(data.growth_rate) }}%
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <div class="text-muted">Active Members</div>
+                        <h2>{{ data.active_members }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Quarterly Breakdown</h4>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead><tr><th>Quarter</th><th>Amount</th></tr></thead>
+                            <tbody>
+                                {% for q, amt in data.quarters.items() %}
+                                <tr><td>{{ q }}</td><td>Tsh {{ "{:,.0f}".format(amt) }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Monthly Breakdown</h4>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead><tr><th>Month</th><th>Amount</th></tr></thead>
+                            <tbody>
+                                {% for m in data.monthly_data %}
+                                <tr><td>{{ m.month }}</td><td>Tsh {{ "{:,.0f}".format(m.amount) }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== PAYMENT HISTORY REPORT ========== -->
+            {% elif report_type == 'payment_history' %}
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>{{ data.total_count }}</strong> payments totaling <strong>Tsh {{ "{:,.0f}".format(data.total_amount) }}</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Date</th>
+                            <th>Receipt</th>
+                            <th>Member</th>
+                            <th>Debt Type</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Transaction ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in data.payments[:100] %}
+                        <tr>
+                            <td>{{ p.date }}</td>
+                            <td><code>{{ p.receipt }}</code></td>
+                            <td><strong>{{ p.member_name }}</strong><br><small>{{ p.member_phone }}</small></td>
+                            <td>{{ p.debt_type }}</td>
+                            <td class="text-success">Tsh {{ "{:,.0f}".format(p.amount) }}</td>
+                            <td>{{ p.method }}</td>
+                            <td>{{ p.transaction_id }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if data.payments|length > 100 %}
+                <p class="text-muted">Showing first 100 payments. Download Excel for complete list.</p>
+                {% endif %}
+            </div>
+
+            <!-- ========== COMPLETED PLEDGES REPORT ========== -->
+            {% elif report_type == 'completed_pledges' %}
+            <div class="alert alert-success mb-4">
+                <i class="bi bi-trophy-fill me-2"></i>
+                <strong>{{ data.completed_count }}</strong> pledges fully paid during this period! Total: <strong>Tsh {{ "{:,.0f}".format(data.total_amount) }}</strong>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-success">
+                        <tr>
+                            <th>Member</th>
+                            <th>Phone</th>
+                            <th>Debt Type</th>
+                            <th>Amount</th>
+                            <th>Completed Date</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in data.pledges %}
+                        <tr>
+                            <td><strong>{{ p.member_name }}</strong><br><small>{{ p.email }}</small></td>
+                            <td>{{ p.phone }}</td>
+                            <td>{{ p.debt_type }}</td>
+                            <td class="text-success">Tsh {{ "{:,.0f}".format(p.total_amount) }}</td>
+                            <td>{{ p.completed_date }}</td>
+                            <td>{{ p.due_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ========== DEFAULT/FALLBACK ========== -->
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Report type "{{ report_type }}" is being processed. Data is available for Excel/PDF export.
+            </div>
+            <div class="bg-light p-4 rounded">
+                <p><strong>Report Data Preview:</strong></p>
+                <pre class="text-muted">{{ data|pprint|truncate(1500) }}</pre>
+            </div>
+            {% endif %}
+
+            <div class="text-muted small mt-4 pt-3 border-top">
+                <i class="bi bi-info-circle"></i> 
+                Report generated from Stewardship Reminder System. For questions, contact church administration.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
