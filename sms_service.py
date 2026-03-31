@@ -86,21 +86,31 @@ class SMSService:
         return True, None
     def _send_beem(self, phone: str, message: str) -> tuple[bool, Optional[str]]:
         """Send SMS via Beem Africa"""
-
+        
         url = "https://apisms.beem.africa/v1/send"
-
+        
         api_key = os.getenv("BEEM_API_KEY")
         secret_key = os.getenv("BEEM_SECRET_KEY")
-
+        
         if not api_key or not secret_key:
             return False, "Beem credentials not configured"
-
+        
+        import base64
+        
+        # Create Basic Auth header correctly
+        auth_string = f"{api_key}:{secret_key}"
+        encoded_auth = base64.b64encode(auth_string.encode()).decode()
+        
         headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {encoded_auth}"
         }
-
+        
+        # Remove spaces from sender ID - Beem may reject spaces
+        sender_id = self.sender_id.replace(" ", "").upper()
+        
         payload = {
-            "source_addr": self.sender_id,
+            "source_addr": sender_id,
             "encoding": 0,
             "schedule_time": "",
             "message": message,
@@ -111,33 +121,55 @@ class SMSService:
                 }
             ]
         }
+        
+        # DEBUG: Print what we're sending
+        print(f"\n📤 BEEM DEBUG - Sending:")
+        print(f"   Phone: {phone}")
+        print(f"   Sender ID: {sender_id}")
+        print(f"   Message: {message[:50]}...")
+        print(f"   API Key: {api_key[:10]}...")
+        print(f"   Auth Header: Basic {encoded_auth[:20]}...")
+        
         try:
             response = requests.post(
                 url,
                 json=payload,
                 headers=headers,
-                auth=(api_key, secret_key),
                 timeout=30
             )
-
+            
+            # DEBUG: Print full response
+            print(f"\n📥 BEEM DEBUG - Response:")
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Response Body: {response.text}")
+            
             if response.status_code == 200:
                 data = response.json()
                 
-                # Check Beem response content
-                if data.get("code") == "100":
-                    logger.info(f"Beem SMS sent to {phone}")
+                # Beem returns code 100 (integer) for success
+                if data.get("code") == 100:
+                    request_id = data.get("data", {}).get("request_id") if data.get("data") else "N/A"
+                    print(f"   ✅ SUCCESS! Request ID: {request_id}")
+                    logger.info(f"Beem SMS sent to {phone}, Request ID: {request_id}")
                     return True, None
                 else:
-                    error = data.get("message", "Unknown Beem error")
-                    logger.error(f"Beem failed: {error}")
-                    return False, error
+                    error_msg = data.get("message", "Unknown Beem error")
+                    print(f"   ❌ BEEM REJECTED: {error_msg}")
+                    logger.error(f"Beem failed: {error_msg}")
+                    return False, error_msg
             else:
-                return False, f"HTTP Error: {response.text}"
-
+                error_msg = f"HTTP {response.status_code}: {response.text}"
+                print(f"   ❌ HTTP ERROR: {error_msg}")
+                return False, error_msg
+                
+        except requests.exceptions.Timeout:
+            return False, "Beem API timeout - please try again"
+        except requests.exceptions.ConnectionError:
+            return False, "Cannot connect to Beem API - check internet"
         except requests.exceptions.RequestException as e:
             return False, f"Network error: {str(e)}"
         except Exception as e:
-            return False, f"Unexpected error: {str(e)}"    
+            return False, f"Unexpected error: {str(e)}"
     
     
     def _send_twilio(self, phone: str, message: str) -> tuple[bool, Optional[str]]:
@@ -217,7 +249,7 @@ REMINDER: Your pledge of Tsh{amount:,.0f} is due on {due_date}.
 Paid: Tsh{amount - balance:,.0f} | Balance: Tsh{balance:,.0f}
 
 Thank you for your faithfulness!
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
 
     @staticmethod
     def payment_thankyou(name: str, amount: float, receipt: str, balance: float) -> str:
@@ -228,7 +260,7 @@ Thank you for your faithfulness!
 Receipt: {receipt}
 
 God bless you abundantly!
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
         else:
             return f"""Dear {name},
 
@@ -236,7 +268,7 @@ Thank you for your payment of Tsh{amount:,.0f}!
 Receipt: {receipt}
 Remaining balance: Tsh{balance:,.0f}
 
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
 
     @staticmethod
     def overdue_reminder(name: str, amount: float, days_overdue: int, balance: float) -> str:
@@ -246,7 +278,7 @@ URGENT: Your pledge of Tsh{amount:,.0f} is {days_overdue} days overdue.
 Outstanding balance: Tsh{balance:,.0f}
 
 Please contact us to arrange payment.
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
 
     @staticmethod
     def welcome_message(name: str, debt_type: str, amount: float, due_date: str) -> str:
@@ -256,11 +288,11 @@ Welcome! Your {debt_type} pledge of Tsh{amount:,.0f} has been recorded.
 Due date: {due_date}
 
 Thank you for your generosity!
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
 
-@staticmethod
-def edit_confirmation(name: str, debt_type: str, total_amount: float, balance: float, due_date: str) -> str:
-    return f"""Dear {name},
+    @staticmethod
+    def edit_confirmation(name: str, debt_type: str, total_amount: float, balance: float, due_date: str) -> str:
+        return f"""Dear {name},
 
 Your {debt_type} pledge has been updated.
 New total: Tsh{total_amount:,.0f}
@@ -268,4 +300,4 @@ Remaining balance: Tsh{balance:,.0f}
 Due date: {due_date}
 
 Thank you for your faithfulness!
-- Stewardship Team"""
+- KKKT CHANGANYIKENI"""
