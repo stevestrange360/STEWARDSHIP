@@ -2,53 +2,44 @@
 {% block title %}Welcome -  Stewardship System{% endblock %}
 
 {% block content %}
-<!-- Hero Banner Section with Background Image -->
-<div class="hero-section mb-5" style="background-image: url('{{ url_for('static', filename='images/church-banner.jpg') }}'); background-size: cover; background-position: center;">
+<!-- Hero Banner Section -->
+<div class="hero-section mb-5" style="background-image: url('{{ url_for('static', filename='images/church-banner.jpg') if banner_exists else '' }}'); background-size: cover; background-position: center;">
     <div class="hero-overlay"></div>
-    <div class="container py-5 position-relative">
-        <div class="row align-items-center">
-            <div class="col-lg-7 fade-in-left">
-                <!-- Church Logo Image -->
-                <div class="church-logo-img mb-4">
-                    <img src="{{ url_for('static', filename='images/church-logo.png') }}" 
-                         alt=" Logo" 
-                         class="img-fluid" 
-                         style="max-height: 120px;">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <!-- Church Logo at TOP LEFT CORNER - Clearly Visible -->
+                <div class="corner-logo-wrapper">
+                    <img src="{{ url_for('static', filename='images/church-logo.png') if logo_exists else '' }}" 
+                         alt="Church Logo" 
+                         class="corner-church-logo">
                 </div>
-                <!-- Church Name with Animation -->
-                <div class="welcome-badge animate-pulse">
-                    <i class="bi bi-church"></i> Welcome to
-                </div>
-                <h1 class="display-7 fw-bold mb-4">
-                    <span class="gradient-text">KKKT CHANGANYIKENI </span>
-                </h1>
-                <h2 class="display-18 mb-15 text-white-50">
-                    TUNACHANGANYIKA<br>NA<br>DAMU YA YESU 
-                </h2>
-                <div class="typing-container mb-4">
-                    <p class="lead typing-text" id="typingText"></p>
-                </div>
-                <p class="mb-4 text-white-80">Managing church member pledges, tracking payments, and sending automated reminders with love and care.</p>
-                <div class="d-flex gap-3">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg pulse-btn">
-                        <i class="bi bi-box-arrow-in-right"></i> Go to Dashboard
-                    </a>
-                    <a href="{{ url_for('main.add_debtor') }}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-person-plus"></i> Add Member
-                    </a>
-                </div>
-            </div>
-            <div class="col-lg-5 text-center fade-in-right">
-                <div class="floating-church">
-                    <i class="bi bi-building"></i>
-                    <i class="bi bi-church cross-icon"></i>
-                    <i class="bi bi-star-fill star-icon"></i>
+
+                <!-- All Text Content - Positioned Below Logo -->
+                <div class="hero-text-content">
+                    <div class="welcome-badge">
+                        <i class="bi bi-church"></i> Welcome to
+                    </div>
+                    <h1 class="church-name">
+                        <span class="church-name-top">KKKT</span>
+                        <span class="church-name-bottom">CHANGANYIKENI</span>
+                    </h1>
+                    <div class="typing-wrapper">
+                        <p class="typing-animation-text" id="typingText"></p>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn-dashboard">
+                            <i class="bi bi-box-arrow-in-right"></i> Go to Dashboard
+                        </a>
+                        <a href="{{ url_for('main.add_debtor') }}" class="btn-add-member">
+                            <i class="bi bi-person-plus"></i> Add Member
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <!-- Church Information Banner -->
 <div class="church-info-banner mb-5" data-aos="fade-up">
     <div class="glass-card p-4">
